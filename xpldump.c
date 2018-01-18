@@ -65,6 +65,12 @@ int main(int argc, char *argv[]) {
 	struct sockaddr_in name;
 	struct hostent *hp, *gethostbyname();
 	int bytes;
+  int doDump = 0;
+
+  while(argc--) {
+    if (strcmp("-d", argv[argc]) == 0)
+      doDump = 1;
+  }
 
   signal(SIGINT, intHandler);
 
@@ -78,8 +84,7 @@ int main(int argc, char *argv[]) {
 	}
 
   /* Bind our local address so that the client can send to us */
-	//memset(&name, 0, sizeof(name));
-  bzero(&name, sizeof(name));
+	memset(&name, 0, sizeof(name));
   name.sin_family = AF_INET;
 	name.sin_addr.s_addr = htonl(INADDR_ANY);
 	name.sin_port = htons(SERVER_PORT);
@@ -95,7 +100,8 @@ int main(int argc, char *argv[]) {
 
 		printf("\e[1;1H\e[2J"); //clear screen and move coursor to 1:1
 		printf("#%d. recv bytes: %d\n",i++ , bytes);
-		dump(buf, bytes);
+		if (doDump)
+      dump(buf, bytes);
 
 		total += bytes;
 
