@@ -3,8 +3,11 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
+#include <signal.h>
 
 #define SERVER_PORT 49005
 #define PROL_DATA "DATA*"
@@ -17,6 +20,8 @@ typedef struct Block
 	float data[8];
 } Block;
 
+static volatile int running = 1;
+
 int checkPrologue(char *data, char *data2) {
 	int i=0;
 
@@ -27,23 +32,43 @@ int checkPrologue(char *data, char *data2) {
 	return 1;
 }
 
+char* readableSize(double size, char *buf) {
+  int i = 0;
+
+  const char* units[] = { "bytes", "KB", "MB", "GB", "TB", "PB" };
+  while (size>1024 && i < sizeof(units)) {
+    size /= 1024;
+    i++;
+  }
+
+  sprintf(buf, "%.*f %s", i, size, units[i]);
+  return buf;
+}
+
 void dump(unsigned char* buf, int len) {
 	while(len--) {
 		printf("%x ", *buf);
 		buf++;
 	}
 	printf("\n");
+} 
+
+void intHandler(int sig) {
+  running = 0;
 }
 
-main(int argc, char *argv[]) {
-	char buf[1024];
+int main(int argc, char *argv[]) {
 
-	int sock;
+  char buf[1024];
+  double total = 0;
+  int sock;
 	struct sockaddr_in name;
 	struct hostent *hp, *gethostbyname();
 	int bytes;
 
-	printf("Listen activating.\n");
+  signal(SIGINT, intHandler);
+
+  printf("Listen activating.\n");
 
   /* Create socket from which to read */
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -53,8 +78,9 @@ main(int argc, char *argv[]) {
 	}
 
   /* Bind our local address so that the client can send to us */
-	bzero((char *) &name, sizeof(name));
-	name.sin_family = AF_INET;
+	//memset(&name, 0, sizeof(name));
+  bzero(&name, sizeof(name));
+  name.sin_family = AF_INET;
 	name.sin_addr.s_addr = htonl(INADDR_ANY);
 	name.sin_port = htons(SERVER_PORT);
 
@@ -65,13 +91,15 @@ main(int argc, char *argv[]) {
 
 	printf("Socket has port number #%d\n", ntohs(name.sin_port));
 	int i=0;
-	while ((bytes = read(sock, buf, 1024)) > 0) {
+	while ( running && (bytes = read(sock, buf, 1024)) > 0 ) {
 
 		printf("\e[1;1H\e[2J"); //clear screen and move coursor to 1:1
 		printf("#%d. recv bytes: %d\n",i++ , bytes);
 		dump(buf, bytes);
 
-		if (bytes >= (PROL_SIZE + sizeof(Block)) && checkPrologue(PROL_DATA, buf)) {
+		total += bytes;
+
+    if (bytes >= (PROL_SIZE + sizeof(Block)) && checkPrologue(PROL_DATA, buf)) {
 
 			Block *msg = (Block*) (buf+PROL_SIZE);
 			bytes -= PROL_SIZE;
@@ -89,5 +117,6 @@ main(int argc, char *argv[]) {
 		}
 	}
 
-	close(sock);
+  close(sock);
+  printf("Total recv: %s\n", readableSize(total, buf));
 }
