@@ -7,13 +7,13 @@ public:
 	int value;
 
 private:
-	int readIndex = 0;
-	int pin;
+	uint8_t readIndex = 0;
+	uint8_t pin;
 	int readings[MA_FACTOR];
 	long int total = 0;
 
 public:
-	Axis(int p) {
+	Axis(uint8_t p) {
 		pin = p;
 		for (int thisReading = 0; thisReading < MA_FACTOR; thisReading++) {
 			readings[thisReading] = 0;
@@ -46,11 +46,9 @@ Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,
 	false, true, false, false, false);
 
 const bool testAutoSendMode = true;
+const uint8_t RXLED = 17; // The RX LED has a defined Arduino pin
+const uint8_t TXLED = 30; // The TX LED has a defined Arduino pin
 const unsigned long gcLedTime = 100;
-
-const int RXLED = 17; // The RX LED has a defined Arduino pin
-const int TXLED = 30; // The TX LED has a defined Arduino pin
-
 unsigned long gNextTime = 0;
 unsigned long gLedTimer = 0;
 
@@ -58,7 +56,7 @@ Axis axisX(A0);
 Axis axisY(A2);
 Axis axisThr(A1);
 
-int buttGears = -1;
+uint8_t buttGears = -1;
 
 void setup() {
 	// put your setup code here, to run once:
@@ -90,7 +88,7 @@ void loop() {
 	}
 
 	//Gears temp solution
-	int butt = digitalRead(2);
+	uint8_t butt = digitalRead(2);
 	if (butt != buttGears) {
 		buttGears = butt;
 		digitalWrite(RXLED, butt);
