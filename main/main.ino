@@ -51,8 +51,6 @@ const unsigned long gcLedTime = 100;
 const int RXLED = 17; // The RX LED has a defined Arduino pin
 const int TXLED = 30; // The TX LED has a defined Arduino pin
 
-int readIndex = 0; //Moving average index
-
 unsigned long gNextTime = 0;
 unsigned long gLedTimer = 0;
 
@@ -82,8 +80,6 @@ void setup() {
 	RXLED0;
 }
 
-
-
 void loop() {
 
 	// unsigned long currentTime = millis();
@@ -93,7 +89,7 @@ void loop() {
 		Serial.println(red, DEC);
 	}
 
-	//Gears
+	//Gears temp solution
 	int butt = digitalRead(2);
 	if (butt != buttGears) {
 		buttGears = butt;
