@@ -1,17 +1,43 @@
 #include <Joystick.h>
 
-struct Axis {
-	int pin;
-	int readings[numReadings];
-	long int total;
+#define MA_FACTOR 5
 
+struct Axis {
+public:
+	int value;
+
+private:
+	int readIndex = 0;
+	int pin;
+	int readings[MA_FACTOR];
+	long int total = 0;
+
+public:
 	Axis(int p) {
 		pin = p;
-		for (int thisReading = 0; thisReading < numReadings; thisReading++) {
+		for (int thisReading = 0; thisReading < MA_FACTOR; thisReading++) {
 			readings[thisReading] = 0;
 		}
 		total = 0;
+		readIndex = 0;
 	}
+
+	int read() {
+		total -= readings[readIndex];
+		readings[readIndex] = analogRead(pin);
+		total += readings[readIndex];
+
+		readIndex++;
+		if (readIndex >= MA_FACTOR) {
+			readIndex = 0;
+		}
+
+		value = total / MA_FACTOR;
+		return value;
+	}
+
+private:
+
 };
 
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,
@@ -25,7 +51,6 @@ const unsigned long gcLedTime = 100;
 const int RXLED = 17; // The RX LED has a defined Arduino pin
 const int TXLED = 30; // The TX LED has a defined Arduino pin
 
-const int numReadings = 5; //Moving average 
 int readIndex = 0; //Moving average index
 
 unsigned long gNextTime = 0;
@@ -57,19 +82,11 @@ void setup() {
 	RXLED0;
 }
 
-int filterAxisRead(Axis *axis) {
 
-	axis->total -= axis->readings[readIndex];
-	axis->readings[readIndex] = analogRead(axis->pin);
-	axis->total += axis->readings[readIndex];
-
-	int average = axis->total / numReadings;
-	return average;
-}
 
 void loop() {
 
-	unsigned long currentTime = millis();
+	// unsigned long currentTime = millis();
 
 	while (Serial.available() > 0) {
 		float red = Serial.parseFloat();
@@ -87,17 +104,9 @@ void loop() {
 	}
 
 	//Axes
-	int valueThrottle = filterAxisRead(&axisThr);
-	int valueAxisX    = filterAxisRead(&axisX);
-	int valueAxisY    = filterAxisRead(&axisY);
-	readIndex++;
-	if (readIndex >= numReadings) {
-		readIndex = 0;
-	}
-
-	Joystick.setThrottle(valueThrottle);
-	Joystick.setXAxis(valueAxisX);
-	Joystick.setYAxis(valueAxisY);
+	Joystick.setThrottle(axisThr.read());
+	Joystick.setXAxis(axisX.read());
+	Joystick.setYAxis(axisY.read());
 
 	// Serial.print(valueAxisX); Serial.print(" ");
 	// Serial.print(valueAxisY); Serial.print(" ");
