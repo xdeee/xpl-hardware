@@ -45,7 +45,7 @@ char* readableSize(double size, char *buf) {
 	return buf;
 }
 
-void dump(unsigned char* buf, int len) {
+void dump(char* buf, int len) {
 	while(len--) {
 		printf("%x ", *buf);
 		buf++;
